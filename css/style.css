@@ -476,3 +476,10 @@ body.cover .dots a.active { background: var(--pink); }
 
 /* Cover photos: keep faces (usually in the upper part) in the frame */
 .slide img { object-position: center 35%; }
+.author { margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.25); max-width: 520px; font-size: 15px; }
+.author-name { font-family: var(--serif); font-size: 22px; color: #fff; }
+.author-name span { display: block; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--pink); }
+.author-links { margin-top: 4px; color: rgba(255,255,255,.8); }
+.author-links a { text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.35); }
+.author-links a:hover { color: var(--pink); border-color: var(--pink); }
+.author-links span { margin: 0 8px; }
