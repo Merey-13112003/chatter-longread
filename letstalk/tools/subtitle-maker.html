@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subtitle maker · Let's Talk</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px 20px 60px; background: #f7f1ea; color: #2b211c; font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .wrap { max-width: 820px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; font-family: Georgia, serif; }
+    .muted { color: #7a6a60; }
+    .step { margin-top: 26px; padding: 20px; background: #fffaf5; border-radius: 16px; box-shadow: 0 6px 24px rgba(74,52,40,.07); }
+    .step h2 { margin: 0 0 10px; font-size: 17px; }
+    textarea { width: 100%; min-height: 170px; padding: 12px; border: 1px solid #e4d8cc; border-radius: 10px; font: 15px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    audio { width: 100%; margin-top: 10px; }
+    button { padding: 11px 20px; border: 0; border-radius: 999px; background: #4a3428; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #e4d8cc; color: #2b211c; }
+    button.big { width: 100%; padding: 20px; font-size: 19px; background: #d9879b; color: #1d1613; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    .now { margin: 14px 0; padding: 18px; border-radius: 12px; background: #4a3428; color: #fff; text-align: center; font-family: Georgia, serif; font-size: 22px; min-height: 70px; }
+    .next { text-align: center; color: #7a6a60; font-size: 15px; margin-bottom: 12px; }
+    kbd { padding: 2px 7px; border-radius: 5px; background: #fff; border: 1px solid #d6c4b2; font-size: 13px; }
+    ol { padding-left: 22px; font-size: 14px; }
+    ol li.done { color: #7a6a60; }
+    ol li.current { font-weight: 700; color: #d9879b; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Subtitle maker</h1>
+  <p class="muted">Помощник для субтитров Надии. Работает прямо в браузере, ничего никуда не отправляет.</p>
+
+  <div class="step">
+    <h2>1. Выберите аудиофайл</h2>
+    <input type="file" id="file" accept="audio/*">
+    <audio id="audio" controls></audio>
+  </div>
+
+  <div class="step">
+    <h2>2. Вставьте текст: одна строка = один субтитр</h2>
+    <p class="muted">Делите речь на короткие куски по 5–12 слов, чтобы субтитр легко читался.</p>
+    <textarea id="lines" placeholder="Hi, my name is Nadiya.&#10;I started coming to Chatterbox last spring.&#10;At first I just wanted to practise my English..."></textarea>
+  </div>
+
+  <div class="step">
+    <h2>3. Расставьте время</h2>
+    <p class="muted">Нажмите «Начать». Аудио запустится с начала. Каждый раз, когда Надия <b>начинает</b> говорить следующую строку, жмите <kbd>Пробел</kbd> или большую кнопку. Когда она договорит последнюю строку, нажмите ещё раз.</p>
+    <div class="row">
+      <button id="start">▶ Начать</button>
+      <button id="reset" class="secondary">Сбросить</button>
+    </div>
+    <div class="now" id="now">—</div>
+    <div class="next" id="next"></div>
+    <button id="mark" class="big" disabled>Отметить начало строки (Пробел)</button>
+    <ol id="progress"></ol>
+  </div>
+
+  <div class="step">
+    <h2>4. Скопируйте результат</h2>
+    <p class="muted">Скопируйте весь текст ниже и вставьте его в <code>js/nadiya-subtitles.js</code> вместо старого содержимого.</p>
+    <textarea id="output" readonly></textarea>
+    <div class="row">
+      <button id="copy" class="secondary">Скопировать</button>
+      <button id="preview" class="secondary">Проверить: проиграть с субтитрами</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const audio = document.getElementById('audio');
+  const linesBox = document.getElementById('lines');
+  const nowBox = document.getElementById('now');
+  const nextBox = document.getElementById('next');
+  const markBtn = document.getElementById('mark');
+  const progress = document.getElementById('progress');
+  const output = document.getElementById('output');
+
+  let lines = [];
+  let cues = [];
+  let step = 0;
+  let timing = false;
+
+  document.getElementById('file').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) audio.src = URL.createObjectURL(f);
+  });
+
+  function renderProgress() {
+    progress.innerHTML = '';
+    lines.forEach((l, i) => {
+      const li = document.createElement('li');
+      const c = cues[i];
+      li.textContent = (c && c.start != null ? '[' + c.start.toFixed(2) + 's] ' : '') + l;
+      if (i < step) li.className = 'done';
+      if (i === step - 1) li.className = 'current';
+      progress.appendChild(li);
+    });
+  }
+
+  function updateLabels() {
+    if (step === 0) { nowBox.textContent = '—'; }
+    else if (step <= lines.length) { nowBox.textContent = lines[step - 1]; }
+    if (step < lines.length) {
+      nextBox.textContent = 'Следующая: «' + lines[step] + '»';
+      markBtn.textContent = 'Отметить начало строки ' + (step + 1) + ' (Пробел)';
+    } else {
+      nextBox.textContent = 'Строки закончились. Нажмите, когда Надия договорит.';
+      markBtn.textContent = 'Конец последней строки (Пробел)';
+    }
+  }
+
+  function buildOutput() {
+    const body = cues
+      .filter(c => c.start != null && c.end != null)
+      .map(c => '  { start: ' + c.start.toFixed(2) + ', end: ' + c.end.toFixed(2) + ', text: ' + JSON.stringify(c.text) + ' }')
+      .join(',\n');
+    output.value = '// Nadiya\'s subtitles. start / end in seconds.\nwindow.SUBTITLES = [\n' + body + '\n];\n';
+  }
+
+  function finish(endTime) {
+    if (cues.length && cues[cues.length - 1].end == null) cues[cues.length - 1].end = endTime;
+    timing = false;
+    markBtn.disabled = true;
+    nextBox.textContent = 'Готово! Результат в шаге 4.';
+    audio.pause();
+    buildOutput();
+    renderProgress();
+  }
+
+  function mark() {
+    if (!timing) return;
+    const t = audio.currentTime;
+    if (step < lines.length) {
+      if (step > 0) cues[step - 1].end = t;
+      cues[step] = { start: t, end: null, text: lines[step] };
+      step++;
+      updateLabels();
+      renderProgress();
+    } else {
+      finish(t);
+    }
+  }
+
+  document.getElementById('start').addEventListener('click', e => {
+    e.currentTarget.blur();
+    if (!audio.src) { alert('Сначала выберите аудиофайл (шаг 1).'); return; }
+    lines = linesBox.value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (!lines.length) { alert('Вставьте текст (шаг 2).'); return; }
+    cues = []; step = 0; timing = true;
+    markBtn.disabled = false;
+    updateLabels(); renderProgress();
+    audio.currentTime = 0;
+    audio.play();
+  });
+
+  document.getElementById('reset').addEventListener('click', e => {
+    e.currentTarget.blur();
+    timing = false; cues = []; step = 0; lines = [];
+    audio.pause(); audio.currentTime = 0;
+    markBtn.disabled = true;
+    nowBox.textContent = '—'; nextBox.textContent = '';
+    progress.innerHTML = ''; output.value = '';
+  });
+
+  markBtn.addEventListener('click', e => { e.currentTarget.blur(); mark(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.code !== 'Space' || !timing) return;
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    e.preventDefault();
+    mark();
+  });
+
+  audio.addEventListener('ended', () => { if (timing) finish(audio.duration); });
+
+  document.getElementById('copy').addEventListener('click', async () => {
+    output.select();
+    try { await navigator.clipboard.writeText(output.value); }
+    catch (err) { document.execCommand('copy'); }
+  });
+
+  /* Preview: plays the audio and shows the subtitles in the dark box */
+  document.getElementById('preview').addEventListener('click', e => {
+    e.currentTarget.blur();
+    const ready = cues.filter(c => c.start != null && c.end != null);
+    if (!ready.length) { alert('Сначала расставьте время (шаг 3).'); return; }
+    timing = false;
+    audio.currentTime = 0;
+    audio.play();
+    const tick = () => {
+      const t = audio.currentTime;
+      const c = ready.find(c => t >= c.start && t < c.end);
+      nowBox.textContent = c ? c.text : ' ';
+      if (!audio.paused) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+</script>
+</body>
+</html>

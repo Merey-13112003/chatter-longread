@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nadiya's Reason · Let's Talk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="4">
+
+  <header class="topbar">
+    <a href="index.html" class="brand">Let's Talk<span>.</span></a>
+    <span class="counter"></span>
+  </header>
+
+  <main class="page">
+
+    <section class="chapter-head reveal">
+      <p class="kicker">Chapter 4</p>
+      <h1>Nadiya's Reason</h1>
+      <p class="lead">Why Nadiya comes to Chatterbox</p>
+    </section>
+
+    <!-- NADIYA: photo + about + audio with synced subtitles.
+         The audio must be a file on your site (subtitles cannot sync with a Google Drive player):
+         download it from Drive and save it as assets/audio/nadiya.mp3
+         The subtitle lines live in js/nadiya-subtitles.js -->
+    <section class="person reveal">
+      <figure class="photo-slot">
+        <img src="assets/photos/nadiya.jpg" alt="Nadiya">
+        <figcaption class="slot-label">Photo: Nadiya<small>assets/photos/nadiya.jpg</small></figcaption>
+      </figure>
+      <div>
+        <p class="person-name">Nadiya</p>
+        <p class="person-role">Chatterbox member</p>
+        <p class="person-about placeholder">[A few words about Nadiya: who she is, what she does, how she found the club.]</p>
+
+        <p class="audio-label">Nadiya's voice note</p>
+        < iframe src="https://drive.google.com/file/d/1l8Hs27RRaiJ949JkGJ2pEnSWyR9jXj1c/view?usp=drive_link"></audio>
+        <p class="notice" id="audio-missing" hidden>Audio file not found. Save Nadiya's recording as <code>assets/audio/nadiya.mp3</code>.</p>
+      </div>
+    </section>
+
+    <section class="reveal">
+      <div class="subtitles" aria-live="polite">
+        <p id="sub-line" class="idle">▶ Press play to hear Nadiya</p>
+      </div>
+      <details class="transcript-toggle">
+        <summary>Read the full transcript</summary>
+        <ol class="transcript" id="transcript"></ol>
+      </details>
+    </section>
+
+  </main>
+
+  <nav class="pager" aria-label="Pages"></nav>
+  <script src="js/nadiya-subtitles.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
